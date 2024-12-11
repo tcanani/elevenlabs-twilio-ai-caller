@@ -141,4 +141,6 @@ Here are useful resources for setting up and understanding the project:
 
 Star ⭐ this repository if you find it helpful!
 
+Want to donate? https://bartslodyczka.gumroad.com/l/potvn
+
 
