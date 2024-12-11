@@ -1,8 +1,6 @@
-# WIP File
-
 # Connect Elevenlabs Conversation AI Agent to Twilio for Inbound and Outbound Calls
 
-![IMAGE placeholder]
+![CleanShot 2024-12-11 at 22 52 50 1](https://github.com/user-attachments/assets/97108c31-0679-44e5-a7a9-cc7e640dcbf1)
 
 Watch the video tutorial here: https://youtu.be/_BxzbGh9uvk
 
