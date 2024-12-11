@@ -4,7 +4,7 @@
 
 ![IMAGE placeholder]
 
-Watch the video tutorial here: LINK
+Watch the video tutorial here: https://youtu.be/_BxzbGh9uvk
 
 ## Overview
 
@@ -137,7 +137,7 @@ Here are useful resources for setting up and understanding the project:
 - [ElevenLabs Conversational AI Agent Documentation](https://elevenlabs.io/conversational-ai)
 - [Settings for Twilio Integration](https://elevenlabs.io/docs/conversational-ai/guides/conversational-ai-twilio)
 - [Settings for Authenticated Requests](https://elevenlabs.io/docs/conversational-ai/customization/conversation-configuration)
-- Watch the tutorial video: LINK
+- Watch the tutorial video: https://youtu.be/_BxzbGh9uvk
 
 ---
 
