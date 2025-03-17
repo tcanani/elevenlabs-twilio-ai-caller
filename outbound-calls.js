@@ -52,7 +52,7 @@ export function registerOutboundRoutes(fastify) {
 
   // Route to initiate outbound calls
   fastify.post('/outbound-call', async (request, reply) => {
-    const { number, user_name } = request.body
+    const { number, user_name, user_email, user_id } = request.body
 
     if (!number) {
       return reply.code(400).send({ error: 'Phone number is required' })
@@ -64,7 +64,11 @@ export function registerOutboundRoutes(fastify) {
         to: number,
         url: `https://${
           request.headers.host
-        }/outbound-call-twiml?user_name=${encodeURIComponent(user_name)}`
+        }/outbound-call-twiml?user_name=${encodeURIComponent(
+          user_name
+        )}&user_email=${encodeURIComponent(
+          user_email
+        )}&user_id=${encodeURIComponent(user_id)}`
       })
 
       reply.send({
@@ -84,12 +88,16 @@ export function registerOutboundRoutes(fastify) {
   // TwiML route for outbound calls
   fastify.all('/outbound-call-twiml', async (request, reply) => {
     const user_name = request.query.user_name || ''
+    const user_email = request.query.user_email || ''
+    const user_id = request.query.user_id || ''
 
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
         <Connect>
           <Stream url="wss://${request.headers.host}/outbound-media-stream">
             <Parameter name="user_name" value="${user_name}" />
+            <Parameter name="user_email" value="${user_email}" />
+            <Parameter name="user_id" value="${user_id}" />
           </Stream>
         </Connect>
       </Response>`
@@ -127,13 +135,15 @@ export function registerOutboundRoutes(fastify) {
               const initialConfig = {
                 type: 'conversation_initiation_client_data',
                 dynamic_variables: {
-                  user_name: customParameters?.user_name || ''
+                  user_name: customParameters?.user_name || '',
+                  user_email: customParameters?.user_email || '',
+                  user_id: customParameters?.user_id || ''
                 }
               }
 
               console.log(
-                '[ElevenLabs] Sending initial config with user_name:',
-                initialConfig.dynamic_variables.user_name
+                '[ElevenLabs] Sending initial config with variables:',
+                initialConfig.dynamic_variables
               )
 
               // Send the configuration to ElevenLabs
