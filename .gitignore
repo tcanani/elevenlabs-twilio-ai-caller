@@ -132,3 +132,6 @@ dist
 # Replit debugger
 .breakpoints
 .qodo
+
+# Replit icons
+generated-icon.png
