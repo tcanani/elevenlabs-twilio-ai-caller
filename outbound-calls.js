@@ -209,9 +209,22 @@ export function registerOutboundRoutes(fastify) {
                     }
                     break
 
+                  case 'agent_response':
+                    console.log('[ElevenLabs] Agent response:', message.text)
+                    break
+
+                  case 'agent_response_correction':
+                    console.log('[ElevenLabs] Agent correction:', message.text)
+                    break
+
+                  case 'user_transcript':
+                    console.log('[ElevenLabs] User transcript:', message.text)
+                    break
+
                   default:
                     console.log(
-                      `[ElevenLabs] Unhandled message type: ${message.type}`
+                      `[ElevenLabs] Unhandled message type: ${message.type}`,
+                      message
                     )
                 }
               } catch (error) {
@@ -223,8 +236,49 @@ export function registerOutboundRoutes(fastify) {
               console.error('[ElevenLabs] WebSocket error:', error)
             })
 
-            elevenLabsWs.on('close', () => {
-              console.log('[ElevenLabs] Disconnected')
+            elevenLabsWs.on('close', (code, reason) => {
+              let disconnectReason = 'Unknown'
+
+              // Códigos padrão WebSocket
+              switch (code) {
+                case 1000:
+                  disconnectReason = 'Normal closure (completed)'
+                  break
+                case 1001:
+                  disconnectReason = 'Going away (endpoint shutting down)'
+                  break
+                case 1002:
+                  disconnectReason = 'Protocol error'
+                  break
+                case 1003:
+                  disconnectReason = 'Unsupported data'
+                  break
+                case 1006:
+                  disconnectReason = 'Abnormal closure (connection lost)'
+                  break
+                case 1007:
+                  disconnectReason = 'Invalid frame payload data'
+                  break
+                case 1008:
+                  disconnectReason = 'Policy violation'
+                  break
+                case 1009:
+                  disconnectReason = 'Message too big'
+                  break
+                case 1011:
+                  disconnectReason = 'Internal server error'
+                  break
+                default:
+                  disconnectReason = `Unknown code: ${code}`
+              }
+
+              console.log('[ElevenLabs] Disconnected', {
+                code,
+                disconnectReason,
+                rawReason: reason || 'No reason provided',
+                streamSid,
+                callSid
+              })
             })
           } catch (error) {
             console.error('[ElevenLabs] Setup error:', error)
@@ -279,8 +333,32 @@ export function registerOutboundRoutes(fastify) {
         })
 
         // Handle WebSocket closure
-        ws.on('close', () => {
-          console.log('[Twilio] Client disconnected')
+        ws.on('close', (code, reason) => {
+          let disconnectReason = 'Unknown'
+
+          switch (code) {
+            case 1000:
+              disconnectReason = 'Normal closure (user ended call)'
+              break
+            case 1006:
+              disconnectReason =
+                'Abnormal closure (connection lost/user hung up)'
+              break
+            case 3000:
+              disconnectReason = 'Twilio Media Timeout'
+              break
+            default:
+              disconnectReason = `Unknown code: ${code}`
+          }
+
+          console.log('[Twilio] Client disconnected', {
+            code,
+            disconnectReason,
+            rawReason: reason || 'No reason provided',
+            streamSid,
+            callSid
+          })
+
           if (elevenLabsWs?.readyState === WebSocket.OPEN) {
             elevenLabsWs.close()
           }
