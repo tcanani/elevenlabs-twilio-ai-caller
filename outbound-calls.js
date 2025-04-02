@@ -52,7 +52,8 @@ export function registerOutboundRoutes(fastify) {
 
   // Route to initiate outbound calls
   fastify.post('/outbound-call', async (request, reply) => {
-    const { number, user_name, user_email, user_id } = request.body
+    const { number, user_name, user_email, user_id, current_date } =
+      request.body
 
     if (!number) {
       return reply.code(400).send({ error: 'Phone number is required' })
@@ -68,7 +69,9 @@ export function registerOutboundRoutes(fastify) {
           user_name
         )}&user_email=${encodeURIComponent(
           user_email
-        )}&user_id=${encodeURIComponent(user_id)}`
+        )}&user_id=${encodeURIComponent(
+          user_id
+        )}&current_date=${encodeURIComponent(current_date)}`
       })
 
       reply.send({
@@ -90,6 +93,7 @@ export function registerOutboundRoutes(fastify) {
     const user_name = request.query.user_name || ''
     const user_email = request.query.user_email || ''
     const user_id = request.query.user_id || ''
+    const current_date = request.query.current_date || ''
 
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
@@ -98,6 +102,7 @@ export function registerOutboundRoutes(fastify) {
             <Parameter name="user_name" value="${user_name}" />
             <Parameter name="user_email" value="${user_email}" />
             <Parameter name="user_id" value="${user_id}" />
+            <Parameter name="current_date" value="${current_date}" />
           </Stream>
         </Connect>
       </Response>`
@@ -131,13 +136,13 @@ export function registerOutboundRoutes(fastify) {
             elevenLabsWs.on('open', () => {
               console.log('[ElevenLabs] Connected to Conversational AI')
 
-              // Send initial configuration with dynamic variables
               const initialConfig = {
                 type: 'conversation_initiation_client_data',
                 dynamic_variables: {
                   user_name: customParameters?.user_name || '',
                   user_email: customParameters?.user_email || '',
-                  user_id: customParameters?.user_id || ''
+                  user_id: customParameters?.user_id || '',
+                  current_date: customParameters?.current_date || ''
                 }
               }
 
@@ -146,7 +151,6 @@ export function registerOutboundRoutes(fastify) {
                 initialConfig.dynamic_variables
               )
 
-              // Send the configuration to ElevenLabs
               elevenLabsWs.send(JSON.stringify(initialConfig))
             })
 
