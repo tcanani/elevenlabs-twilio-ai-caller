@@ -52,7 +52,8 @@ export function registerOutboundRoutes(fastify) {
 
   // Route to initiate outbound calls
   fastify.post('/outbound-call', async (request, reply) => {
-    const { number, user_name, user_email, user_id } = request.body
+    const { number, user_name, user_email, user_id, current_date } =
+      request.body
 
     if (!number) {
       return reply.code(400).send({ error: 'Phone number is required' })
@@ -68,7 +69,9 @@ export function registerOutboundRoutes(fastify) {
           user_name
         )}&user_email=${encodeURIComponent(
           user_email
-        )}&user_id=${encodeURIComponent(user_id)}`
+        )}&user_id=${encodeURIComponent(
+          user_id
+        )}&current_date=${encodeURIComponent(current_date)}`
       })
 
       reply.send({
@@ -90,6 +93,7 @@ export function registerOutboundRoutes(fastify) {
     const user_name = request.query.user_name || ''
     const user_email = request.query.user_email || ''
     const user_id = request.query.user_id || ''
+    const current_date = request.query.current_date || ''
 
     const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
@@ -98,6 +102,7 @@ export function registerOutboundRoutes(fastify) {
             <Parameter name="user_name" value="${user_name}" />
             <Parameter name="user_email" value="${user_email}" />
             <Parameter name="user_id" value="${user_id}" />
+            <Parameter name="current_date" value="${current_date}" />
           </Stream>
         </Connect>
       </Response>`
@@ -131,13 +136,13 @@ export function registerOutboundRoutes(fastify) {
             elevenLabsWs.on('open', () => {
               console.log('[ElevenLabs] Connected to Conversational AI')
 
-              // Send initial configuration with dynamic variables
               const initialConfig = {
                 type: 'conversation_initiation_client_data',
                 dynamic_variables: {
                   user_name: customParameters?.user_name || '',
                   user_email: customParameters?.user_email || '',
-                  user_id: customParameters?.user_id || ''
+                  user_id: customParameters?.user_id || '',
+                  current_date: customParameters?.current_date || ''
                 }
               }
 
@@ -146,7 +151,6 @@ export function registerOutboundRoutes(fastify) {
                 initialConfig.dynamic_variables
               )
 
-              // Send the configuration to ElevenLabs
               elevenLabsWs.send(JSON.stringify(initialConfig))
             })
 
@@ -209,9 +213,22 @@ export function registerOutboundRoutes(fastify) {
                     }
                     break
 
+                  case 'agent_response':
+                    console.log('[ElevenLabs] Agent response:', message.text)
+                    break
+
+                  case 'agent_response_correction':
+                    console.log('[ElevenLabs] Agent correction:', message.text)
+                    break
+
+                  case 'user_transcript':
+                    console.log('[ElevenLabs] User transcript:', message.text)
+                    break
+
                   default:
                     console.log(
-                      `[ElevenLabs] Unhandled message type: ${message.type}`
+                      `[ElevenLabs] Unhandled message type: ${message.type}`,
+                      message
                     )
                 }
               } catch (error) {
@@ -223,8 +240,49 @@ export function registerOutboundRoutes(fastify) {
               console.error('[ElevenLabs] WebSocket error:', error)
             })
 
-            elevenLabsWs.on('close', () => {
-              console.log('[ElevenLabs] Disconnected')
+            elevenLabsWs.on('close', (code, reason) => {
+              let disconnectReason = 'Unknown'
+
+              // Códigos padrão WebSocket
+              switch (code) {
+                case 1000:
+                  disconnectReason = 'Normal closure (completed)'
+                  break
+                case 1001:
+                  disconnectReason = 'Going away (endpoint shutting down)'
+                  break
+                case 1002:
+                  disconnectReason = 'Protocol error'
+                  break
+                case 1003:
+                  disconnectReason = 'Unsupported data'
+                  break
+                case 1006:
+                  disconnectReason = 'Abnormal closure (connection lost)'
+                  break
+                case 1007:
+                  disconnectReason = 'Invalid frame payload data'
+                  break
+                case 1008:
+                  disconnectReason = 'Policy violation'
+                  break
+                case 1009:
+                  disconnectReason = 'Message too big'
+                  break
+                case 1011:
+                  disconnectReason = 'Internal server error'
+                  break
+                default:
+                  disconnectReason = `Unknown code: ${code}`
+              }
+
+              console.log('[ElevenLabs] Disconnected', {
+                code,
+                disconnectReason,
+                rawReason: reason || 'No reason provided',
+                streamSid,
+                callSid
+              })
             })
           } catch (error) {
             console.error('[ElevenLabs] Setup error:', error)
@@ -279,8 +337,32 @@ export function registerOutboundRoutes(fastify) {
         })
 
         // Handle WebSocket closure
-        ws.on('close', () => {
-          console.log('[Twilio] Client disconnected')
+        ws.on('close', (code, reason) => {
+          let disconnectReason = 'Unknown'
+
+          switch (code) {
+            case 1000:
+              disconnectReason = 'Normal closure (user ended call)'
+              break
+            case 1006:
+              disconnectReason =
+                'Abnormal closure (connection lost/user hung up)'
+              break
+            case 3000:
+              disconnectReason = 'Twilio Media Timeout'
+              break
+            default:
+              disconnectReason = `Unknown code: ${code}`
+          }
+
+          console.log('[Twilio] Client disconnected', {
+            code,
+            disconnectReason,
+            rawReason: reason || 'No reason provided',
+            streamSid,
+            callSid
+          })
+
           if (elevenLabsWs?.readyState === WebSocket.OPEN) {
             elevenLabsWs.close()
           }
