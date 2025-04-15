@@ -163,6 +163,18 @@ export function registerOutboundRoutes(fastify) {
                     console.log('[ElevenLabs] Received initiation metadata')
                     break
 
+                  case 'end_call':
+                    console.log('[ElevenLabs] Agent requested to end call')
+                    // Close ElevenLabs connection
+                    if (elevenLabsWs?.readyState === WebSocket.OPEN) {
+                      elevenLabsWs.close()
+                    }
+                    // Close Twilio connection
+                    if (ws.readyState === WebSocket.OPEN) {
+                      ws.close()
+                    }
+                    break
+
                   case 'audio':
                     if (streamSid) {
                       if (message.audio?.chunk) {
