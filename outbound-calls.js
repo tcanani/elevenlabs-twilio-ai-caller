@@ -254,47 +254,71 @@ export function registerOutboundRoutes(fastify) {
 
             elevenLabsWs.on('close', (code, reason) => {
               let disconnectReason = 'Unknown'
+              let severity = 'info'
 
-              // Códigos padrão WebSocket
               switch (code) {
                 case 1000:
                   disconnectReason = 'Normal closure (completed)'
+                  severity = 'info'
                   break
                 case 1001:
                   disconnectReason = 'Going away (endpoint shutting down)'
+                  severity = 'warn'
                   break
                 case 1002:
                   disconnectReason = 'Protocol error'
+                  severity = 'error'
                   break
                 case 1003:
                   disconnectReason = 'Unsupported data'
+                  severity = 'error'
                   break
                 case 1006:
-                  disconnectReason = 'Abnormal closure (connection lost)'
+                  disconnectReason =
+                    'Abnormal closure (connection lost/user hung up)'
+                  severity = 'warn'
                   break
                 case 1007:
                   disconnectReason = 'Invalid frame payload data'
+                  severity = 'error'
                   break
                 case 1008:
                   disconnectReason = 'Policy violation'
+                  severity = 'error'
                   break
                 case 1009:
                   disconnectReason = 'Message too big'
+                  severity = 'error'
                   break
                 case 1011:
                   disconnectReason = 'Internal server error'
+                  severity = 'error'
+                  break
+                case 3000:
+                  disconnectReason = 'Twilio Media Timeout'
+                  severity = 'warn'
                   break
                 default:
                   disconnectReason = `Unknown code: ${code}`
+                  severity = 'warn'
               }
 
               console.log('[ElevenLabs] Disconnected', {
                 code,
                 disconnectReason,
+                severity,
                 rawReason: reason || 'No reason provided',
                 streamSid,
                 callSid
               })
+
+              // Close Twilio connection for ANY ElevenLabs WebSocket closure
+              if (ws.readyState === WebSocket.OPEN) {
+                console.log(
+                  '[ElevenLabs] Closing Twilio connection due to ElevenLabs disconnection'
+                )
+                ws.close()
+              }
             })
           } catch (error) {
             console.error('[ElevenLabs] Setup error:', error)
