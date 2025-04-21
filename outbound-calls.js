@@ -71,7 +71,11 @@ export function registerOutboundRoutes(fastify) {
           user_email
         )}&user_id=${encodeURIComponent(
           user_id
-        )}&current_date=${encodeURIComponent(current_date)}`
+        )}&current_date=${encodeURIComponent(current_date)}`,
+        // Add AMD parameters
+        machineDetection: 'Enable',
+        asyncAmd: true,
+        asyncAmdStatusCallback: `https://${request.headers.host}/amd-status-callback`
       })
 
       reply.send({
@@ -86,6 +90,31 @@ export function registerOutboundRoutes(fastify) {
         error: 'Failed to initiate call'
       })
     }
+  })
+
+  // Add AMD status callback route
+  fastify.post('/amd-status-callback', async (request, reply) => {
+    const { CallSid, AnsweredBy } = request.body
+
+    console.log('[AMD] Detection Result:', {
+      callSid: CallSid,
+      answeredBy: AnsweredBy
+    })
+
+    // End call if voicemail is detected
+    if (
+      AnsweredBy &&
+      (AnsweredBy === 'machine_start' || AnsweredBy.startsWith('machine_end'))
+    ) {
+      console.log('[AMD] Voicemail detected, ending call:', CallSid)
+      try {
+        await twilioClient.calls(CallSid).update({ status: 'completed' })
+      } catch (error) {
+        console.error('[AMD] Error ending call:', error)
+      }
+    }
+
+    reply.send({ success: true })
   })
 
   // TwiML route for outbound calls
@@ -103,6 +132,7 @@ export function registerOutboundRoutes(fastify) {
             <Parameter name="user_email" value="${user_email}" />
             <Parameter name="user_id" value="${user_id}" />
             <Parameter name="current_date" value="${current_date}" />
+            <Parameter name="call_sid" value="${request.query.CallSid || ''}" />
           </Stream>
         </Connect>
       </Response>`
@@ -142,7 +172,8 @@ export function registerOutboundRoutes(fastify) {
                   user_name: customParameters?.user_name || '',
                   user_email: customParameters?.user_email || '',
                   user_id: customParameters?.user_id || '',
-                  current_date: customParameters?.current_date || ''
+                  current_date: customParameters?.current_date || '',
+                  call_sid: customParameters?.call_sid || ''
                 }
               }
 
