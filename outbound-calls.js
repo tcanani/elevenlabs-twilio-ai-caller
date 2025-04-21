@@ -132,7 +132,6 @@ export function registerOutboundRoutes(fastify) {
             <Parameter name="user_email" value="${user_email}" />
             <Parameter name="user_id" value="${user_id}" />
             <Parameter name="current_date" value="${current_date}" />
-            <Parameter name="call_sid" value="${request.query.CallSid || ''}" />
           </Stream>
         </Connect>
       </Response>`
@@ -172,8 +171,7 @@ export function registerOutboundRoutes(fastify) {
                   user_name: customParameters?.user_name || '',
                   user_email: customParameters?.user_email || '',
                   user_id: customParameters?.user_id || '',
-                  current_date: customParameters?.current_date || '',
-                  call_sid: customParameters?.call_sid || ''
+                  current_date: customParameters?.current_date || ''
                 }
               }
 
