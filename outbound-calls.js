@@ -75,7 +75,8 @@ export function registerOutboundRoutes(fastify) {
         // Add AMD parameters
         machineDetection: 'Enable',
         asyncAmd: true,
-        asyncAmdStatusCallback: `https://${request.headers.host}/amd-status-callback`
+        asyncAmdStatusCallback: `https://${request.headers.host}/amd-status-callback`,
+        mediaTimeout: 600
       })
 
       reply.send({
